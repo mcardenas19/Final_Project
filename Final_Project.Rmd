@@ -7,6 +7,10 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(mdsr)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
 ```
 
 ## R Markdown
@@ -21,10 +25,11 @@ train <- read.csv('train.csv')
 
 library(readxl)
 library(xlsx)
-Dept_Names <- readxl::read_xlsx('department codes.xlsx')
+Dept_Names <- readxl::read_xlsx('department-codes.xlsx')
 
 DF <- merge(features, train, by = c("Store","Date"))
 Walmart <- left_join(DF, Dept_Names, by = "Dept")
 
-ggplot(Walmart, aes(x = Temperature, y = Temperature)) + geom_point()
+my_Walmart <- Walmart %>%
+  select(Store, Date, Weekly_Sales, Dept)
 ```
