@@ -9,22 +9,119 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Load Packages Here
+```{r}
+library(readxl)
+library(xlsx)
+library(ggplot2)
+library(tidyverse)
+```
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
+## Get the Data
 ```{r}
 features <- read.csv('features.csv')
 train <- read.csv('train.csv')
-
-library(readxl)
-library(xlsx)
 Dept_Names <- readxl::read_xlsx('department codes.xlsx')
-
 DF <- merge(features, train, by = c("Store","Date"))
 Walmart <- left_join(DF, Dept_Names, by = "Dept")
+```
 
-ggplot(Walmart, aes(x = Temperature, y = Temperature)) + geom_point()
+## Data Wrangle
+```{r}
+Christmas_2010 <- Walmart %>%
+  filter(Date == '2010-12-24') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+Christmas_2010
+
+Thanksgiving_2010 <- Walmart %>%
+  filter(Date == '2010-11-26') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+Thanksgiving_2010
+
+LaborDay_2010 <- Walmart %>%
+  filter(Date == '2010-09-03') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+LaborDay_2010
+
+SuperBowl_2010 <- Walmart %>%
+  filter(Date == '2010-02-05') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+SuperBowl_2010
+```
+
+```{r}
+Christmas_2011 <- Walmart %>%
+  filter(Date == '2011-12-23') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+Christmas_2011
+
+Thanksgiving_2011 <- Walmart %>%
+  filter(Date == '2011-11-25') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+Thanksgiving_2011
+
+LaborDay_2011 <- Walmart %>%
+  filter(Date == '2011-09-02') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+LaborDay_2011
+
+SuperBowl_2011 <- Walmart %>%
+  filter(Date == '2011-02-04') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+SuperBowl_2011
+```
+
+```{r}
+Christmas_2012 <- Walmart %>%
+  filter(Date == '2012-12-21') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+Christmas_2012
+
+Thanksgiving_2012 <- Walmart %>%
+  filter(Date == '2012-11-23') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+Thanksgiving_2012
+
+LaborDay_2012 <- Walmart %>%
+  filter(Date == '2012-09-07') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+LaborDay_2012
+
+SuperBowl_2012 <- Walmart %>%
+  filter(Date == '2012-02-03') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+SuperBowl_2012
+```
+
+```{r}
+SuperBowl_2013 <- Walmart %>%
+  filter(Date == '2013-02-08') %>%
+  group_by(Dept_name) %>%
+  summarise(sum_sales = sum(Weekly_Sales)) %>%
+  arrange(desc(sum_sales))
+SuperBowl_2013
 ```
