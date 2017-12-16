@@ -1,132 +1,257 @@
 ---
-title: "Final_Project"
+title: "Holiday Wal-Smart"
 author: "Monica Cardenas & Kelly Yang"
-date: "11/7/2017"
-output: html_document
+date: "12/18/2017"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(mdsr)
+# load packages here
+library(mdsr) 
 library(ggplot2)
 library(tidyr)
 library(dplyr)
-```
-
-## Load Packages Here
-```{r}
 library(readxl)
-library(xlsx)
 library(ggplot2)
 library(tidyverse)
 ```
 
-## Get the Data
-```{r}
-features <- read.csv('features.csv')
+```{r setup, include=FALSE}
+# the data
+# downloaded .csv files from kaggle.com
+
 train <- read.csv('train.csv')
+test <- read.csv('test.csv')
 Dept_Names <- readxl::read_xlsx('department codes.xlsx')
 
-DF <- merge(features, train, by = c("Store","Date"))
-Walmart <- left_join(DF, Dept_Names, by = "Dept")
+features <- read.csv('features.csv')
+# was not used 
 ```
 
-## Data Wrangle
 ```{r}
-Christmas_2010 <- Walmart %>%
-  filter(Date == '2010-12-24') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-Christmas_2010
+# Split data into train/test
+# reproduced in-class model
 
-Thanksgiving_2010 <- Walmart %>%
+ds <- train %>%
+  filter(substring(Date,1, 4) != 2012 ) 
+# filtered out rows with 2012 data since we only wanted 2010 and 2011 to predict 2012
+
+n <- nrow(ds)
+ds$name <- row.names(ds)
+set.seed(1)
+train_index <- sample(1:n, round(n*.5))
+train1 <- ds[train_index,]
+test1 <- ds[-train_index,]
+# did a random split of the 2010 and 2011 data
+```
+
+
+```{r}
+# Learn the model using train set
+m1 <- lm(Weekly_Sales ~ as.factor(Dept) + Date + IsHoliday, data = train1)
+# added 3 variables to the model
+summary(m1)
+```
+
+
+```{r}
+# Makes predictions on test set
+test1$prediction1 <- predict(m1, test1)
+test1_result <- test1 %>%
+  summarise(MAE = sum(abs(prediction1 - Weekly_Sales))/n(),
+            MSE = sum((prediction1 - Weekly_Sales)^2)/n(),
+            SSE = sum((prediction1 - Weekly_Sales)^2))
+test1_result
+```
+
+
+```{r}
+# 2010 Holidays using lm model predictions
+# filter the date that we need and then take the average of the sales across the departments
+
+CHRISTMAS2010_test <- test1 %>%
+  filter(Date == '2010-12-31') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(prediction1)) %>%
+  arrange(desc(avg_sales))
+
+THANKSGIVING2010_test <- test1 %>%
   filter(Date == '2010-11-26') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-Thanksgiving_2010
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(prediction1)) %>%
+  arrange(desc(avg_sales))
 
-LaborDay_2010 <- Walmart %>%
-  filter(Date == '2010-09-03') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-LaborDay_2010
+LABORDAY2010_test <- test1 %>%
+  filter(Date == '2010-09-10') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(prediction1)) %>%
+  arrange(desc(avg_sales))
 
-SuperBowl_2010 <- Walmart %>%
-  filter(Date == '2010-02-05') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-SuperBowl_2010
+SUPERBOWL2010_test <- test1 %>%
+  filter(Date == '2010-02-12') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(prediction1)) %>%
+  arrange(desc(avg_sales))
 ```
 
-```{r}
-Christmas_2011 <- Walmart %>%
-  filter(Date == '2011-12-23') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-Christmas_2011
 
-Thanksgiving_2011 <- Walmart %>%
+```{r}
+# 2011 Holidays using lm model predictions
+# filter the date that we need and then take the average of the sales across the departments
+
+CHRISTMAS2011_test <- test1 %>%
+  filter(Date == '2011-12-30') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(prediction1)) %>%
+  arrange(desc(avg_sales))
+
+THANKSGIVING2011_test <- test1 %>%
   filter(Date == '2011-11-25') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-Thanksgiving_2011
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(prediction1)) %>%
+  arrange(desc(avg_sales))
 
-LaborDay_2011 <- Walmart %>%
-  filter(Date == '2011-09-02') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-LaborDay_2011
+LABORDAY2011_test <- test1 %>%
+  filter(Date == '2011-09-09') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(prediction1)) %>%
+  arrange(desc(avg_sales))
 
-SuperBowl_2011 <- Walmart %>%
-  filter(Date == '2011-02-04') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-SuperBowl_2011
+SUPERBOWL2011_test <- test1 %>%
+  filter(Date == '2011-02-11') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(prediction1)) %>%
+  arrange(desc(avg_sales))
+```
+
+
+```{r}
+# Take the average of 2010 and 2011 to get the prediction_sales for 2012 using lm model
+# compare with actual sales of 2012
+
+CHRISTMAS_test <- inner_join(CHRISTMAS2010_test, CHRISTMAS2011_test, by = "Dept")
+CHRISTMAS_test <- CHRISTMAS_test %>%
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2) 
+
+THANKSGIVING_test <- inner_join(THANKSGIVING2010_test, THANKSGIVING2011_test, by = "Dept")
+THANKSGIVING_test <- THANKSGIVING_test %>%
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
+
+LABORDAY_test <- inner_join(LABORDAY2010_test, LABORDAY2011_test, by = "Dept")
+LABORDAY_test <- LABORDAY_test %>%
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
+
+SUPERBOWL_test <- inner_join(SUPERBOWL2010_test, SUPERBOWL2011_test, by = "Dept")
+SUPERBOWL_test <- SUPERBOWL_test %>%
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
+```
+
+
+```{r}
+## 2010 Holidays using actual sale averages
+
+Christmas_2010 <- train %>%
+  filter(Date == '2010-12-31') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
+# avg_sales is the average sales across 45 stores in each dept
+
+Thanksgiving_2010 <- train %>%
+  filter(Date == '2010-11-26') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
+
+LaborDay_2010 <- train %>%
+  filter(Date == '2010-09-10') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
+
+SuperBowl_2010 <- train %>%
+  filter(Date == '2010-02-12') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
+```
+
+
+```{r}
+# 2011 Holidays using actual sale averages
+
+Christmas_2011 <- train %>%
+  filter(Date == '2011-12-30') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
+
+Thanksgiving_2011 <- train %>%
+  filter(Date == '2011-11-25') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
+
+LaborDay_2011 <- train %>%
+  filter(Date == '2011-09-09') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
+
+SuperBowl_2011 <- train %>%
+  filter(Date == '2011-02-11') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
 ```
 
 ```{r}
-Christmas_2012 <- Walmart %>%
-  filter(Date == '2012-12-21') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-Christmas_2012
+# Take the average of 2010 and 2011 to get the prediction_sales for 2012
 
-Thanksgiving_2012 <- Walmart %>%
-  filter(Date == '2012-11-23') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-Thanksgiving_2012
+Christmas <- inner_join(Christmas_2010, Christmas_2011, by = "Dept")
+Christmas <- Christmas %>%
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2) 
+Christmas
+ggplot(Christmas, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Christmas Sales") + xlab("Department") + ylab("Average Sales")
 
-LaborDay_2012 <- Walmart %>%
+Thanksgiving <- inner_join(Thanksgiving_2010, Thanksgiving_2011, by = "Dept")
+Thanksgiving <- Thanksgiving %>%
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
+Thanksgiving
+ggplot(Thanksgiving, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Thanksgiving Sales") + xlab("Department") + ylab("Average Sales")
+
+LaborDay <- inner_join(LaborDay_2010, LaborDay_2011, by = "Dept")
+LaborDay <- LaborDay %>%
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
+LaborDay
+ggplot(LaborDay, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Labor Day Sales") + xlab("Department") + ylab("Average Sales")
+
+SuperBowl <- inner_join(SuperBowl_2010, SuperBowl_2011, by = "Dept")
+SuperBowl <- SuperBowl %>%
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
+SuperBowl
+ggplot(SuperBowl, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Super Bowl Sales") + xlab("Department") + ylab("Average Sales")
+```
+
+```{r}
+# Compare prediction_sales from lm model and averages model with 2012 actual average sales
+
+LaborDay_2012 <- train %>%
   filter(Date == '2012-09-07') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
 LaborDay_2012
+ggplot(LaborDay_2012, aes(x= as.factor(Dept), y = avg_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Labor Day Sales 2012") + xlab("Department") + ylab("Average Sales")
 
-SuperBowl_2012 <- Walmart %>%
-  filter(Date == '2012-02-03') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
+SuperBowl_2012 <- train %>%
+  filter(Date == '2012-02-10') %>%
+  group_by(Dept) %>%
+  summarise(avg_sales = mean(Weekly_Sales)) %>%
+  arrange(desc(avg_sales))
 SuperBowl_2012
-```
-
-```{r}
-SuperBowl_2013 <- Walmart %>%
-  filter(Date == '2013-02-08') %>%
-  group_by(Dept_name) %>%
-  summarise(sum_sales = sum(Weekly_Sales)) %>%
-  arrange(desc(sum_sales))
-SuperBowl_2013
+ggplot(SuperBowl_2012, aes(x= as.factor(Dept), y = avg_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Super Bowl Sales 2012") + xlab("Department") + ylab("Average Sales")
 ```
