@@ -3,12 +3,10 @@ title: "Holiday Wal-Smart"
 author: "Monica Cardenas & Kelly Yang"
 date: "12/18/2017"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r, setup, include=FALSE}
 # load packages here
 library(mdsr) 
 library(ggplot2)
@@ -19,7 +17,16 @@ library(ggplot2)
 library(tidyverse)
 ```
 
-```{r setup, include=FALSE}
+# Abstract
+Our project focuses on exploring the sales data of 45 US Walmart stores from 2010-2013. We used this data to determine which departments brought in the most revenue during the week of four popular holidays/events of the year: Christmas, Thanksgiving, Labor Day, Super Bowl. We discovered that Walmart makes most of its revenue from groceries, no matter what holiday. We see that electronics are popular during Christmas week, Thanksgiving week and Super Bowl week, and pharmacy prescriptions during Labor Day week. After observing 2010 and 2011 sales for each department on the given holiday week, we used the historical data to predict store sales in 2012 and 2013. The predictions were similar to the actual data that we had for 2012 so we concluded that the departments mentioned above would continue being Walmart’s top selling departments during these holidays. 
+
+# Introduction
+According to the Business Insider, Walmart is America’s biggest retailer, pulling in $288 billion in retail sales a year, resulting in a profit of approximately $1.8 million every hour. With affordable prices and selling just about anything anyone can think of, about 37 million people shop at Walmart every day. Thus, we were curious to see in which departments Walmart was making the majority of its profits. We explored the Walmart data of 45 US stores in various regions to see what departments earned the most revenue, but only during the week of a holiday since common knowledge tells us holidays tend to bring in more sales. The holidays we decided to delve into were Christmas, Thanksgiving, Labor Day, and the Super Bowl. We then attempted to forecast future sales by using historical data. We tested our model by using the 2010 and 2011 sales data and determining if it accurately predicted 2012 sales. We first ran a predictive model using a train and test set, but the MSE was extremely high, so we moved onto another strategy. We took the averages of the historical sales by department in both 2010 and 2011, and proceeded to take the average of those averages to get our predictions for 2012. In the end, we compared our train/test model to our historical averages model, and the historical averages model predicted 2012 sales more accurately than the train/test model. We concluded that the historical averages model could forecast future sales for each department during the four holidays that we chose.
+
+# Data
+We downloaded three .csv files from a competition on kaggle.com that Walmart posted. In addition, Walmart sent us an email of a document we requested with the department codes and the corresponding department names. We converted the document into an Excel file and read that into R because we wanted to match the name of the department to the code to make the data more readable. Out of the three data sets, we only used the train and the test set. The train set contains the variables Store (numerical, sample of stores 1 – 45), Dept (categorical, department code 1-99), Date (yyyy-mm-dd, week ending on Friday, 2010-02-05 to 2012-10-26), Weekly_Sales (numerical, in dollars, total sales for the week), and IsHoliday (boolean, true or false). The test set contains all the variables mentioned above with a few exceptions: Weekly_Sales does not appear and the Date variable only contains dates from 2012-11-02 to 2013-07-26. Walmart intended for this set to be where we would make the predictions for 2012 and 2013. The avg_sales variable is the variable we created, which is the average amount of sales for each department. The prediction_sales variable is another variable that we created that represents the predictions for the sales of each department in 2012. This variable is the average sales between the 2010 and 2011 avg_sales.
+
+```{r}
 # the data
 # downloaded .csv files from kaggle.com
 
@@ -28,129 +35,14 @@ test <- read.csv('test.csv')
 Dept_Names <- readxl::read_xlsx('department codes.xlsx')
 
 features <- read.csv('features.csv')
-# was not used 
+# features was not used 
 ```
 
-```{r}
-# Split data into train/test
-# reproduced in-class model
+# Results
+This is where we created a linear model using the train and test model. We wanted to predict 2012 sales using 2010 and 2011 data, so we took out the 2012 dates from the train set and then split that set into a train and test set. We used the variables Dept and Date in our model on the train set and it had an adjusted R-squared of 52.46%. This means that 52.46% of the variability in Weekly_Sales is explained by the model. We then used this model to make predictions on our test set, but our MSE was extremely high at a value of 246,760,088, so we decided that it was not accurate enough to forecast sales. We decided to try another method to predict 2012 sales. We took the average sales by department of 2010 and 2011, joined them, and took the average between them to get the prediction variable. We got an adjusted R-squared of 99.21% for the week of the Super Bowl. This indicates that 99.21% of the variability in the average sales of the 2012 Super Bowl is explained by this model. And the MSE was a value of 4,225,211, which is lower than the previous model. We got an adjusted R-squared of 99.31% for the week of Labor Day which indicates that 99.31% of the variability in the average sales of Labor Day week in 2012 is explained by this model. The MSE for the week of Labor Day is 4,280,498. After comparing the lm model and the lm historical averages model to the actual sales of 2012, we concluded that the averages of historical data did a better job at predicting 2012 sales because it had a much better R-squared value and lower MSE. 
 
-ds <- train %>%
-  filter(substring(Date,1, 4) != 2012 ) 
-# filtered out rows with 2012 data since we only wanted 2010 and 2011 to predict 2012
-
-n <- nrow(ds)
-ds$name <- row.names(ds)
-set.seed(1)
-train_index <- sample(1:n, round(n*.5))
-train1 <- ds[train_index,]
-test1 <- ds[-train_index,]
-# did a random split of the 2010 and 2011 data
-```
-
-
-```{r}
-# Learn the model using train set
-m1 <- lm(Weekly_Sales ~ as.factor(Dept) + Date + IsHoliday, data = train1)
-# added 3 variables to the model
-summary(m1)
-```
-
-
-```{r}
-# Makes predictions on test set
-test1$prediction1 <- predict(m1, test1)
-test1_result <- test1 %>%
-  summarise(MAE = sum(abs(prediction1 - Weekly_Sales))/n(),
-            MSE = sum((prediction1 - Weekly_Sales)^2)/n(),
-            SSE = sum((prediction1 - Weekly_Sales)^2))
-test1_result
-```
-
-
-```{r}
-# 2010 Holidays using lm model predictions
-# filter the date that we need and then take the average of the sales across the departments
-
-CHRISTMAS2010_test <- test1 %>%
-  filter(Date == '2010-12-31') %>%
-  group_by(Dept) %>%
-  summarise(avg_sales = mean(prediction1)) %>%
-  arrange(desc(avg_sales))
-
-THANKSGIVING2010_test <- test1 %>%
-  filter(Date == '2010-11-26') %>%
-  group_by(Dept) %>%
-  summarise(avg_sales = mean(prediction1)) %>%
-  arrange(desc(avg_sales))
-
-LABORDAY2010_test <- test1 %>%
-  filter(Date == '2010-09-10') %>%
-  group_by(Dept) %>%
-  summarise(avg_sales = mean(prediction1)) %>%
-  arrange(desc(avg_sales))
-
-SUPERBOWL2010_test <- test1 %>%
-  filter(Date == '2010-02-12') %>%
-  group_by(Dept) %>%
-  summarise(avg_sales = mean(prediction1)) %>%
-  arrange(desc(avg_sales))
-```
-
-
-```{r}
-# 2011 Holidays using lm model predictions
-# filter the date that we need and then take the average of the sales across the departments
-
-CHRISTMAS2011_test <- test1 %>%
-  filter(Date == '2011-12-30') %>%
-  group_by(Dept) %>%
-  summarise(avg_sales = mean(prediction1)) %>%
-  arrange(desc(avg_sales))
-
-THANKSGIVING2011_test <- test1 %>%
-  filter(Date == '2011-11-25') %>%
-  group_by(Dept) %>%
-  summarise(avg_sales = mean(prediction1)) %>%
-  arrange(desc(avg_sales))
-
-LABORDAY2011_test <- test1 %>%
-  filter(Date == '2011-09-09') %>%
-  group_by(Dept) %>%
-  summarise(avg_sales = mean(prediction1)) %>%
-  arrange(desc(avg_sales))
-
-SUPERBOWL2011_test <- test1 %>%
-  filter(Date == '2011-02-11') %>%
-  group_by(Dept) %>%
-  summarise(avg_sales = mean(prediction1)) %>%
-  arrange(desc(avg_sales))
-```
-
-
-```{r}
-# Take the average of 2010 and 2011 to get the prediction_sales for 2012 using lm model
-# compare with actual sales of 2012
-
-CHRISTMAS_test <- inner_join(CHRISTMAS2010_test, CHRISTMAS2011_test, by = "Dept")
-CHRISTMAS_test <- CHRISTMAS_test %>%
-  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2) 
-
-THANKSGIVING_test <- inner_join(THANKSGIVING2010_test, THANKSGIVING2011_test, by = "Dept")
-THANKSGIVING_test <- THANKSGIVING_test %>%
-  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
-
-LABORDAY_test <- inner_join(LABORDAY2010_test, LABORDAY2011_test, by = "Dept")
-LABORDAY_test <- LABORDAY_test %>%
-  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
-
-SUPERBOWL_test <- inner_join(SUPERBOWL2010_test, SUPERBOWL2011_test, by = "Dept")
-SUPERBOWL_test <- SUPERBOWL_test %>%
-  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
-```
-
-
-```{r}
+```{r, echo=FALSE}
+## Creating the Averages Model
 ## 2010 Holidays using actual sale averages
 
 Christmas_2010 <- train %>%
@@ -179,8 +71,7 @@ SuperBowl_2010 <- train %>%
   arrange(desc(avg_sales))
 ```
 
-
-```{r}
+```{r, echo=FALSE}
 # 2011 Holidays using actual sale averages
 
 Christmas_2011 <- train %>%
@@ -207,35 +98,37 @@ SuperBowl_2011 <- train %>%
   summarise(avg_sales = mean(Weekly_Sales)) %>%
   arrange(desc(avg_sales))
 ```
-
+ 
+# Predictions for 2012 Sales Using Historical Averages Model
 ```{r}
 # Take the average of 2010 and 2011 to get the prediction_sales for 2012
 
 Christmas <- inner_join(Christmas_2010, Christmas_2011, by = "Dept")
 Christmas <- Christmas %>%
-  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2) 
-Christmas
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2) %>%
+  arrange(desc(prediction_sales))
 ggplot(Christmas, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Christmas Sales") + xlab("Department") + ylab("Average Sales")
 
 Thanksgiving <- inner_join(Thanksgiving_2010, Thanksgiving_2011, by = "Dept")
 Thanksgiving <- Thanksgiving %>%
-  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
-Thanksgiving
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2) %>%
+  arrange(desc(prediction_sales))
 ggplot(Thanksgiving, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Thanksgiving Sales") + xlab("Department") + ylab("Average Sales")
 
 LaborDay <- inner_join(LaborDay_2010, LaborDay_2011, by = "Dept")
 LaborDay <- LaborDay %>%
-  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
-LaborDay
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2) %>%
+  arrange(desc(prediction_sales))
 ggplot(LaborDay, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Labor Day Sales") + xlab("Department") + ylab("Average Sales")
 
 SuperBowl <- inner_join(SuperBowl_2010, SuperBowl_2011, by = "Dept")
 SuperBowl <- SuperBowl %>%
-  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2)
-SuperBowl
+  mutate(prediction_sales = (avg_sales.x + avg_sales.y)/2) %>%
+  arrange(desc(prediction_sales))
 ggplot(SuperBowl, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Super Bowl Sales") + xlab("Department") + ylab("Average Sales")
 ```
 
+# Actual 2012 Sales
 ```{r}
 # Compare prediction_sales from lm model and averages model with 2012 actual average sales
 
@@ -244,7 +137,6 @@ LaborDay_2012 <- train %>%
   group_by(Dept) %>%
   summarise(avg_sales = mean(Weekly_Sales)) %>%
   arrange(desc(avg_sales))
-LaborDay_2012
 ggplot(LaborDay_2012, aes(x= as.factor(Dept), y = avg_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Labor Day Sales 2012") + xlab("Department") + ylab("Average Sales")
 
 SuperBowl_2012 <- train %>%
@@ -252,6 +144,86 @@ SuperBowl_2012 <- train %>%
   group_by(Dept) %>%
   summarise(avg_sales = mean(Weekly_Sales)) %>%
   arrange(desc(avg_sales))
-SuperBowl_2012
 ggplot(SuperBowl_2012, aes(x= as.factor(Dept), y = avg_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Super Bowl Sales 2012") + xlab("Department") + ylab("Average Sales")
 ```
+
+# Compare Historical Averages Model with Prediction Model
+### Historical Averages Model
+```{r}
+# finding R-squared and MSE for averages model on Super Bowl
+train2 <- inner_join(SuperBowl, SuperBowl_2012, by = "Dept")
+m2 <- lm(avg_sales ~ prediction_sales, data=train2)
+summary(m2)
+
+train2_result <- train2 %>%
+  summarise(MAE = sum(abs(prediction_sales - avg_sales))/n(),
+            MSE = sum((prediction_sales - avg_sales)^2)/n(),
+            SSE = sum((prediction_sales - avg_sales)^2))
+train2_result
+```
+
+```{r}
+# finding R-squared and MSE for averages model on Labor Day
+train3 <- inner_join(LaborDay, LaborDay_2012, by = "Dept")
+m3 <- lm(avg_sales ~ prediction_sales, data=train3)
+summary(m3)
+
+train3_result <- train3 %>%
+  summarise(MAE = sum(abs(prediction_sales - avg_sales))/n(),
+            MSE = sum((prediction_sales - avg_sales)^2)/n(),
+            SSE = sum((prediction_sales - avg_sales)^2))
+train3_result
+```
+
+### Prediction Model
+```{r}
+# attempt at making prediction model
+# Split data into train/test
+# reproduced in-class model
+
+ds <- train %>%
+  filter(substring(Date,1, 4) != 2012 ) 
+# filtered out rows with 2012 data since we only wanted 2010 and 2011 to predict 2012
+
+n <- nrow(ds)
+ds$name <- row.names(ds)
+set.seed(1)
+train_index <- sample(1:n, round(n*.5))
+train1 <- ds[train_index,]
+test1 <- ds[-train_index,]
+# did a random split of the 2010 and 2011 data
+```
+
+```{r}
+# Learn the model using train set
+m1 <- lm(Weekly_Sales ~ as.factor(Dept) + Date, data = train1)
+# added 3 variables to the model
+summary(m1)
+```
+
+```{r}
+# Makes predictions on test set
+test1$prediction1 <- predict(m1, test1)
+test1_result <- test1 %>%
+  summarise(MAE = sum(abs(prediction1 - Weekly_Sales))/n(),
+            MSE = sum((prediction1 - Weekly_Sales)^2)/n(),
+            SSE = sum((prediction1 - Weekly_Sales)^2))
+test1_result
+```
+
+# Diagnostics
+The Shiny App that we created allows the user to select a holiday and a department code. The holiday will output a bar plot. For each bar plot, the department number is displayed on the x-axis, and the sales predictions from the averages of 2010 and 2011 data is illustrated on the y-axis. The color is by department number and it is for visibility purposes to show each department. The department code will output the department name that corresponds with that code number.
+
+•	Super Bowl Figure: The highest bar was department #92 (Groceries), second was department #72 (Electronics), third was department #95 (DSD Groceries), fourth was department #38 (Pharmacy Prescription), and fifth was department #40 (Pharmacy (OTC)).
+•	Labor Day Figure: The highest bar was department #92 (Groceries), second was department #95 (DSD Groceries), third was department #38 (Pharmacy Prescription), fourth was department #90 (Dairy), and fifth was department #72 (Electronics).
+•	Thanksgiving Figure: The highest bar was department #72 (Electronics), second was department #92 (Groceries) third was department #5 (Media & Gaming), fourth was department #7 (Toys), and fifth was department #95 (DSD Groceries).
+•	Christmas Figure: The highest bar was department #92 (Groceries), second was department #72 (Electronics), third was department #95 (DSD Groceries), fourth was department #38 (Pharmacy Prescription), and fifth was department #40 (Pharmacy (OTC)).
+
+# Conclusions
+The original question we set out to answer was, “What departments in Walmart make the most revenue during Christmas, Thanksgiving, Labor Day, and the Super Bowl?” We successfully discovered that the grocery department makes the most or the second most revenue no matter what holiday it was. The electronics department is the second most popular during Christmas week, electronics is the most popular during Thanksgiving, electronics is second most popular during Super Bowl week, and pharmacy products and prescriptions is the third most popular during Labor Day week (after two grocery-related departments). We were also able to successfully predict 2012 sales using the average sales from 2010 and 2011. We conclude that historical data forecasts sales more accurately than creating a predictive model. We also think that the departments mentioned above will continue being Walmart’s top selling departments during these holidays.
+
+We recommend to Walmart to make sure their inventory is well stocked for the holidays since consumers spend the most money on these departments. We had a few limitations that affected our project. Even though Walmart sent the document with the department names to us, there is a chance that the department codes on that document do not 100% match up with the department codes on the data set from kaggle.com. 
+
+It was also difficult to make a predictive model with just the variables Dept and Date because of the complexity of using variables that aren’t numerical. We could have incorporated the features data set and seen if there was a relationship between temperature and/or fuel price on the weekly sales. Creating the Shiny App was difficult and it could be improved. We would modify it so that it included all the holidays in the year instead of the four that we chose. There would be a bar graph for every holiday showing the departments and the predictive revenue for that year based on the sales from the previous two years. There would also be an additional side panel where you could look up the department code and the app would output the department name and the revenue of that department. This would work if we could continuously feed the app new data. We only have 2010 and 2011 data, but in order to predict 2018 sales, we would have to feed it 2016 and 2017 data. This would help Walmart predict the average amount of sales per department on a holiday and thus would allow them to prepare for stocking their inventory.
+
+

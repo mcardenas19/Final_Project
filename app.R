@@ -86,11 +86,14 @@ ui <-
       sidebarPanel(
         selectInput("Holiday",
                     "Select the Holiday: ",
-                    choices = c("SuperBowl", "Labor Day", "Thanksgiving", "Christmas"))
+                    choices = c("SuperBowl", "Labor Day", "Thanksgiving", "Christmas")),
+        selectInput("DepartmentCode",
+                    "Select a Code: ",
+                    choices = c(1:40, 46, 49, 50, 56, 58, 60, 65, 67, 71, 72, 74, 75, 77, 79:99))
       ),
-      
       mainPanel(
-        plotOutput("Plot")
+        plotOutput("Plot"),
+        textOutput("Text")
       )
     )
   )
@@ -109,6 +112,13 @@ server <-
         
       } else{
         ggplot(Christmas, aes(x= as.factor(Dept), y = prediction_sales, fill=as.factor(Dept))) + geom_bar(stat = 'identity') + ggtitle("Christmas Average Sales of 2010 & 2011") + xlab("Department") + ylab("Average Sales")
+      }
+    })
+    output$Text <- renderPrint({
+      for (i in 1:74) {
+        if(input$DepartmentCode == Dept_Names$Dept[i]) {
+          print(Dept_Names$Dept_name[i])
+        }
       }
     }
     )
